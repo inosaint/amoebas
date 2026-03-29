@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amoeba Waiting Room</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      body { overflow: hidden; }
+      .layout {
+        height: 100vh;
+        display: grid;
+        grid-template-columns: 360px 1200px;
+        gap: 14px;
+        justify-content: center;
+        align-content: stretch;
+        padding: 14px;
+      }
+      .left {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 12px;
+      }
+      .box { padding: 14px; }
+      .session-code {
+        font-size: 2rem;
+        letter-spacing: 0.2rem;
+        font-weight: 800;
+        margin-top: 0.2rem;
+      }
+      .wifi {
+        margin-top: 0.45rem;
+        color: var(--muted);
+      }
+      .wifi-name {
+        display: inline-block;
+        min-width: 120px;
+        padding: 0 4px;
+        border-radius: 6px;
+        outline: none;
+        border: 1px dashed rgba(255, 255, 255, 0.3);
+      }
+      .wifi-name:focus {
+        border-color: rgba(255, 255, 255, 0.65);
+        background: rgba(255, 255, 255, 0.08);
+      }
+      #qr {
+        width: 220px;
+        height: 220px;
+        border-radius: 16px;
+        background: #fff;
+        display: block;
+        margin: 0.5rem auto 0;
+        object-fit: contain;
+      }
+      .leader-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0.45rem 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .leader-item:last-child { border-bottom: none; }
+      .name {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .world {
+        position: relative;
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        width: 1200px;
+        height: calc(100vh - 28px);
+      }
+      #game {
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: radial-gradient(circle at 30% 20%, #264d77, #10273d);
+      }
+      .overlay {
+        position: absolute;
+        inset: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        pointer-events: none;
+      }
+      .chip {
+        pointer-events: auto;
+        background: rgba(5, 8, 14, 0.48);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 0.45rem 0.7rem;
+      }
+      @media (max-width: 1620px) {
+        .layout {
+          grid-template-columns: 330px minmax(860px, 1fr);
+          align-content: stretch;
+        }
+        .world {
+          width: 100%;
+          height: calc(100vh - 28px);
+          min-height: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="layout">
+      <section class="left">
+        <article class="panel box">
+          <div style="font-size: 0.85rem; color: var(--muted)">SESSION CODE</div>
+          <div class="session-code" id="code">-----</div>
+          <div class="wifi">
+            1. Join Wi-Fi:
+            <strong><u><span id="wifi-name" class="wifi-name" contenteditable="true" spellcheck="false" role="textbox" aria-label="Wi-Fi name">underline visitor</span></u></strong>
+            <br />2. Scan QR and move your amoeba.
+          </div>
+          <img id="qr" alt="Join QR" />
+        </article>
+
+        <article class="panel box">
+          <div style="font-weight: 700; margin-bottom: 0.5rem">Top Scorers</div>
+          <div id="leaderboard"></div>
+        </article>
+
+      </section>
+
+      <section class="world panel">
+        <canvas id="game"></canvas>
+        <div class="overlay">
+          <div class="chip" id="player-count">Players: 0</div>
+          <div class="chip">Amoeba Mixer</div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="/screen.js"></script>
+  </body>
+</html>

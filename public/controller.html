@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Amoeba Controller</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      body {
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 14px;
+      }
+      .card {
+        width: min(460px, 100%);
+        padding: 16px;
+      }
+      .row { display: flex; gap: 10px; align-items: center; }
+      .grow { flex: 1 1 auto; }
+      .name-wrap {
+        position: relative;
+        width: 100%;
+      }
+      .name-input {
+        padding-right: 2.6rem;
+      }
+      .name-random-btn {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        font-size: 0.95rem;
+        line-height: 1;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .muted { color: var(--muted); font-size: 0.9rem; }
+      .joystick-wrap {
+        margin-top: 12px;
+        display: grid;
+        place-items: center;
+      }
+      .joy {
+        width: 230px;
+        height: 230px;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), rgba(255,255,255,0.03));
+        position: relative;
+        touch-action: none;
+      }
+      .knob {
+        width: 82px;
+        height: 82px;
+        border-radius: 50%;
+        background: linear-gradient(120deg, #4cc9f0, #06d6a0);
+        position: absolute;
+        left: 74px;
+        top: 74px;
+      }
+      .hidden { display: none; }
+      .death {
+        margin-top: 12px;
+        border: 1px solid color-mix(in oklab, var(--warn), white 20%);
+        background: rgba(255, 107, 107, 0.12);
+        border-radius: 12px;
+        padding: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="panel card">
+      <div class="row" style="justify-content: space-between">
+        <strong>Amoeba Controller</strong>
+        <span id="status" class="muted">Connecting...</span>
+      </div>
+
+      <div class="row" style="margin-top: 10px">
+        <div class="name-wrap grow">
+          <input id="name" class="name-input" type="text" maxlength="22" placeholder="Your amoeba name" />
+          <button id="name-random" type="button" class="name-random-btn" aria-label="Generate stranger title" title="Generate stranger title">✦</button>
+        </div>
+        <input id="color" type="color" value="#4cc9f0" style="width:56px;height:42px;padding:0;border:none;background:transparent" />
+      </div>
+
+      <div id="join-ui" class="row" style="margin-top: 10px">
+        <input id="code" type="text" maxlength="5" placeholder="Session code" style="text-transform:uppercase" />
+        <button id="join">Join</button>
+      </div>
+
+      <div class="muted" style="margin-top: 8px">Move with the joystick. Grow by eating pellets and smaller amoebas.</div>
+
+      <section id="alive-ui" class="joystick-wrap hidden">
+        <div id="joy" class="joy">
+          <div id="knob" class="knob"></div>
+        </div>
+      </section>
+
+      <section id="death-ui" class="death hidden">
+        <div><strong>You got absorbed.</strong></div>
+        <div id="death-message" class="muted" style="margin-top: 4px"></div>
+        <div id="death-score" style="margin-top: 6px; font-size: 1.1rem"></div>
+        <button id="respawn" style="margin-top: 8px">Respawn</button>
+      </section>
+
+      <div style="margin-top: 10px; font-size: 0.9rem" id="leader-hint"></div>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="/controller.js"></script>
+  </body>
+</html>
