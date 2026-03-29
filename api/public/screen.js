@@ -3,14 +3,14 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const leaderboardEl = document.getElementById('leaderboard');
 const agentCountEl = document.getElementById('agent-count');
-const toggleBtn = document.getElementById('toggle-btn');
-const layout = document.getElementById('layout');
+const lbPanel = document.getElementById('leaderboard-panel');
+const lbHeader = document.getElementById('leaderboard-header');
 
 const world = { width: 2400, height: 1600 };
 let state = { players: [], pellets: [], ripMarkers: [], leaderboard: [] };
 
-toggleBtn.addEventListener('click', () => {
-  layout.classList.toggle('collapsed');
+lbHeader.addEventListener('click', () => {
+  lbPanel.classList.toggle('collapsed');
 });
 
 function resize() {
@@ -178,17 +178,18 @@ function render() {
 }
 
 function renderLeaderboard() {
-  if (!state.leaderboard || !state.leaderboard.length) {
+  const top5 = (state.leaderboard || []).slice(0, 5);
+  if (!top5.length) {
     leaderboardEl.innerHTML = '<div class="muted">No agents yet.</div>';
     return;
   }
 
-  leaderboardEl.innerHTML = state.leaderboard
+  leaderboardEl.innerHTML = top5
     .map(
       (item) =>
         `<div class="leader-item">
-          <span class="name"><span class="dot" style="background:${item.color}"></span>#${item.rank} ${item.name}</span>
-          <strong>${Math.round(item.score)}</strong>
+          <span class="lb-name"><span class="dot" style="background:${item.color}"></span><span>#${item.rank} ${item.name}</span></span>
+          <span class="lb-score">${Math.round(item.score)}</span>
         </div>`
     )
     .join('');

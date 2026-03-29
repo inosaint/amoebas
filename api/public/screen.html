@@ -7,47 +7,11 @@
     <link rel="stylesheet" href="/styles.css" />
     <style>
       body { overflow: hidden; }
-      .layout {
-        height: 100vh;
-        display: grid;
-        grid-template-columns: 280px 1fr;
-        gap: 14px;
-        padding: 14px;
-        transition: grid-template-columns 0.2s ease;
-      }
-      .layout.collapsed {
-        grid-template-columns: 0px 1fr;
-        gap: 0;
-        padding-left: 0;
-      }
-      .left {
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        min-width: 0;
-      }
-      .layout.collapsed .left {
-        opacity: 0;
-        pointer-events: none;
-      }
-      .box { padding: 14px; overflow-y: auto; }
-      .leader-item {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 0.45rem 0;
-        border-bottom: 1px solid var(--line);
-      }
-      .leader-item:last-child { border-bottom: none; }
-      .name { display: inline-flex; align-items: center; gap: 8px; }
-      .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+      /* Canvas fills entire viewport */
       .world {
-        position: relative;
-        border-radius: 18px;
-        overflow: hidden;
-        border: 1px solid var(--line);
-        min-width: 0;
+        position: fixed;
+        inset: 0;
       }
       #game {
         width: 100%;
@@ -55,45 +19,139 @@
         display: block;
         background: radial-gradient(circle at 30% 20%, #264d77, #10273d);
       }
-      .overlay {
-        position: absolute;
-        inset: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
+
+      /* All HUD elements sit above the canvas */
+      .hud {
+        position: fixed;
+        inset: 0;
         pointer-events: none;
       }
-      .chip {
+
+      /* Agent count chip — top left */
+      #agent-count {
+        position: absolute;
+        top: 14px;
+        left: 14px;
         pointer-events: auto;
+      }
+
+      /* Leaderboard panel — top right, glass overlay */
+      #leaderboard-panel {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 220px;
+        pointer-events: auto;
+      }
+
+      /* Collapsed: only the header row is visible */
+      #leaderboard-panel.collapsed #leaderboard-body {
+        display: none;
+      }
+
+      #leaderboard-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        user-select: none;
+        border-radius: 12px;
+        background: rgba(5, 8, 14, 0.55);
+        border: 1px solid var(--line);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        gap: 8px;
+      }
+      #leaderboard-header:hover {
+        background: rgba(5, 8, 14, 0.72);
+      }
+      #leaderboard-panel:not(.collapsed) #leaderboard-header {
+        border-radius: 12px 12px 0 0;
+        border-bottom: none;
+      }
+      .lb-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .lb-chevron {
+        font-size: 0.7rem;
+        color: var(--muted);
+        transition: transform 0.2s ease;
+      }
+      #leaderboard-panel:not(.collapsed) .lb-chevron {
+        transform: rotate(180deg);
+      }
+
+      #leaderboard-body {
+        background: rgba(5, 8, 14, 0.55);
+        border: 1px solid var(--line);
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 0.3rem 0.75rem 0.6rem;
+      }
+
+      .leader-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 0.38rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        font-size: 0.85rem;
+      }
+      .leader-item:last-child { border-bottom: none; }
+      .lb-name {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-width: 0;
+        overflow: hidden;
+      }
+      .lb-name span:last-child {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+      .lb-score { font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+
+      /* Generic chip for agent count */
+      .chip {
         background: rgba(5, 8, 14, 0.55);
         border: 1px solid var(--line);
         border-radius: 999px;
         padding: 0.4rem 0.75rem;
         font-size: 0.85rem;
-        cursor: pointer;
-        user-select: none;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
       }
-      .chip:hover { background: rgba(5, 8, 14, 0.75); }
-      .muted { color: var(--muted); font-size: 0.9rem; }
+      .muted { color: var(--muted); font-size: 0.85rem; }
     </style>
   </head>
   <body>
-    <main class="layout" id="layout">
-      <section class="left">
-        <article class="panel box" style="flex: 1;">
-          <div style="font-weight: 700; margin-bottom: 0.5rem">Top Scorers</div>
-          <div id="leaderboard"><div class="muted">Waiting for agents…</div></div>
-        </article>
-      </section>
+    <div class="world">
+      <canvas id="game"></canvas>
+    </div>
 
-      <section class="world panel">
-        <canvas id="game"></canvas>
-        <div class="overlay">
-          <div class="chip" id="agent-count">Agents: 0</div>
-          <div class="chip" id="toggle-btn">☰ Leaderboard</div>
+    <div class="hud">
+      <div class="chip" id="agent-count">Agents: 0</div>
+
+      <div id="leaderboard-panel" class="collapsed">
+        <div id="leaderboard-header">
+          <span class="lb-title">Top Scorers</span>
+          <span class="lb-chevron">▲</span>
         </div>
-      </section>
-    </main>
+        <div id="leaderboard-body">
+          <div id="leaderboard"><div class="muted">Waiting for agents…</div></div>
+        </div>
+      </div>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script type="module" src="/screen.js"></script>
