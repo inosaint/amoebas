@@ -1,5 +1,11 @@
 # Amoeba Mixer
 
+
+
+https://github.com/user-attachments/assets/c94037b1-6dfe-47c3-8595-e0372d76a43c
+
+
+
 Multiplayer party game for a shared screen + phone controllers.
 
 - Host runs the game screen and shows a QR code.
