@@ -214,7 +214,11 @@ function checkPrestige(player, world) {
     player.prestige += 1;
     player.score = START_SCORE;
     player.mass = getMassFromScore(START_SCORE);
-    world.currentTickEvents.push({ type: 'prestige', player: player.name, count: player.prestige });
+    player.x = Math.random() * WORLD_WIDTH;
+    player.y = Math.random() * WORLD_HEIGHT;
+    player.vx = 0;
+    player.vy = 0;
+    world.currentTickEvents.push({ type: 'prestige', player: player.name, count: player.prestige, x: player.x, y: player.y });
   }
 }
 
