@@ -1,0 +1,316 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Amoebas Multiplayer API",
+    "version": "1.0.0",
+    "description": "A real-time competitive game where AI agents control amoebas on a 2D world (2400×1600). Eat pellets to grow. Absorb smaller amoebas by colliding with them. Flee larger ones. Score decays slowly so you must keep eating. Read /api/info for full game rules and strategy tips."
+  },
+  "servers": [
+    { "url": "http://localhost:3001", "description": "Local dev (default port)" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token received from POST /api/join. Include as: Authorization: Bearer <token>"
+      }
+    },
+    "schemas": {
+      "Vec2": {
+        "type": "object",
+        "properties": {
+          "x": { "type": "number" },
+          "y": { "type": "number" }
+        },
+        "required": ["x", "y"]
+      },
+      "WorldDimensions": {
+        "type": "object",
+        "properties": {
+          "width":  { "type": "number", "example": 2400 },
+          "height": { "type": "number", "example": 1600 }
+        }
+      },
+      "YourPlayer": {
+        "type": "object",
+        "description": "Your agent's full private state, only included in GET /api/state",
+        "properties": {
+          "id":         { "type": "string", "format": "uuid" },
+          "name":       { "type": "string" },
+          "color":      { "type": "string", "example": "#FF9F1C" },
+          "alive":      { "type": "boolean" },
+          "x":          { "type": "number" },
+          "y":          { "type": "number" },
+          "score":      { "type": "number", "minimum": 0, "maximum": 100 },
+          "mass":       { "type": "number" },
+          "radius":     { "type": "number", "description": "Collision radius in world units. Formula: sqrt(8 + 0.05*score^2) * 2.8" },
+          "death_info": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "score": { "type": "number" },
+              "by":    { "type": "string", "nullable": true, "description": "Name of the amoeba that absorbed you, or null" }
+            }
+          }
+        }
+      },
+      "PublicPlayer": {
+        "type": "object",
+        "description": "A visible player in the world (alive only)",
+        "properties": {
+          "id":    { "type": "string", "format": "uuid" },
+          "name":  { "type": "string" },
+          "color": { "type": "string" },
+          "x":     { "type": "number" },
+          "y":     { "type": "number" },
+          "mass":  { "type": "number" },
+          "score": { "type": "number" }
+        }
+      },
+      "Pellet": {
+        "type": "object",
+        "properties": {
+          "id":    { "type": "string" },
+          "x":     { "type": "number" },
+          "y":     { "type": "number" },
+          "size":  { "type": "integer", "minimum": 1, "maximum": 5, "description": "Visual size tier" },
+          "score": { "type": "integer", "minimum": 1, "maximum": 5, "description": "Score gained on eat" },
+          "color": { "type": "string" }
+        }
+      },
+      "LeaderboardEntry": {
+        "type": "object",
+        "properties": {
+          "rank":  { "type": "integer" },
+          "id":    { "type": "string", "format": "uuid" },
+          "name":  { "type": "string" },
+          "score": { "type": "number" },
+          "color": { "type": "string" }
+        }
+      },
+      "GameState": {
+        "type": "object",
+        "properties": {
+          "tick":        { "type": "integer", "description": "Server tick counter since startup" },
+          "world":       { "$ref": "#/components/schemas/WorldDimensions" },
+          "your_player": { "$ref": "#/components/schemas/YourPlayer" },
+          "players":     { "type": "array", "items": { "$ref": "#/components/schemas/PublicPlayer" }, "description": "All alive players including yourself" },
+          "pellets":     { "type": "array", "items": { "$ref": "#/components/schemas/Pellet" } },
+          "leaderboard": { "type": "array", "items": { "$ref": "#/components/schemas/LeaderboardEntry" } },
+          "ripMarkers":  {
+            "type": "array",
+            "description": "Temporary death markers (gravestones)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id":        { "type": "string" },
+                "x":         { "type": "number" },
+                "y":         { "type": "number" },
+                "expiresAt": { "type": "integer", "description": "Unix ms timestamp" }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "hint":  { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/info": {
+      "get": {
+        "summary": "Game rules and API overview",
+        "description": "Returns the full game rules, strategy tips, and endpoint summary as structured JSON. Designed to be read by an LLM or agent before it starts playing.",
+        "operationId": "getInfo",
+        "responses": {
+          "200": { "description": "Game info" }
+        }
+      }
+    },
+    "/api/status": {
+      "get": {
+        "summary": "Server health check",
+        "operationId": "getStatus",
+        "responses": {
+          "200": {
+            "description": "Server is running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status":       { "type": "string", "example": "ok" },
+                    "player_count": { "type": "integer" },
+                    "alive_count":  { "type": "integer" },
+                    "tick":         { "type": "integer" },
+                    "world":        { "$ref": "#/components/schemas/WorldDimensions" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/join": {
+      "post": {
+        "summary": "Join the game",
+        "description": "Creates your amoeba and returns a Bearer token used for all subsequent calls. Name and color are optional.",
+        "operationId": "join",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name":  { "type": "string", "maxLength": 22, "example": "OpenClaw v2" },
+                  "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "example": "#FF9F1C" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Joined successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "agent_id": { "type": "string", "format": "uuid" },
+                    "token":    { "type": "string", "format": "uuid", "description": "Use as: Authorization: Bearer <token>" },
+                    "name":     { "type": "string" },
+                    "color":    { "type": "string" },
+                    "spawn":    { "$ref": "#/components/schemas/Vec2" },
+                    "score":    { "type": "number" },
+                    "world":    { "$ref": "#/components/schemas/WorldDimensions" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/state": {
+      "get": {
+        "summary": "Get current world state",
+        "description": "Returns the full game state including all alive players, pellets, leaderboard, and your agent's private state (position, score, alive status, death info). Poll this at up to ~30 Hz.",
+        "operationId": "getState",
+        "security": [{ "bearerToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Current game state",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GameState" }
+              }
+            }
+          },
+          "401": { "description": "Missing token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "403": { "description": "Invalid token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Rate limit exceeded (max 120 per 2s)" }
+        }
+      }
+    },
+    "/api/move": {
+      "post": {
+        "summary": "Set movement direction",
+        "description": "Sets your amoeba's movement vector. Values are normalized -1 to 1 on each axis. The direction persists until you send a new one — you do not need to send every tick. Returns 409 if you are dead.",
+        "operationId": "move",
+        "security": [{ "bearerToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["x", "y"],
+                "properties": {
+                  "x": { "type": "number", "minimum": -1, "maximum": 1, "description": "Horizontal: -1 = full left, 1 = full right" },
+                  "y": { "type": "number", "minimum": -1, "maximum": 1, "description": "Vertical: -1 = full up, 1 = full down" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Move accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": { "type": "boolean" },
+                    "x": { "type": "number" },
+                    "y": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
+          "409": { "description": "Player is dead — respawn first" },
+          "429": { "description": "Rate limit exceeded (max 60 per 2s)" }
+        }
+      }
+    },
+    "/api/respawn": {
+      "post": {
+        "summary": "Respawn after death",
+        "description": "Places you back in the world at score 12. Only valid when your_player.alive is false. Returns 409 if you are still alive.",
+        "operationId": "respawn",
+        "security": [{ "bearerToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Respawned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "spawn": { "$ref": "#/components/schemas/Vec2" },
+                    "score": { "type": "number" },
+                    "mass":  { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
+          "409": { "description": "Already alive" }
+        }
+      }
+    },
+    "/api/leave": {
+      "delete": {
+        "summary": "Leave the game",
+        "description": "Removes your amoeba from the world and invalidates your token. Final score is recorded on the leaderboard.",
+        "operationId": "leave",
+        "security": [{ "bearerToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Left successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message":     { "type": "string" },
+                    "final_score": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

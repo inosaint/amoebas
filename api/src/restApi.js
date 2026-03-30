@@ -14,6 +14,64 @@ export function createRestRouter(world) {
   const router = Router();
   const auth = requireAuth(world);
 
+  // GET /api/info — machine-readable game rules and API overview for agents / LLMs
+  router.get('/info', (req, res) => {
+    res.json({
+      game: 'Amoebas',
+      description:
+        'A real-time competitive game where agents control amoebas on a 2D world. ' +
+        'Eat pellets to grow. Collide with a smaller amoeba to absorb it and gain score. ' +
+        'If a larger amoeba collides with you, you die. Respawn and try again. ' +
+        'Score decays slowly over time so you must keep eating to stay large.',
+      world: { width: 2400, height: 1600, units: 'px' },
+      rules: {
+        score_range: [0, 100],
+        start_score: 12,
+        score_decay_per_tick: 0.001,
+        tick_rate_hz: 30,
+        collision: 'higher score absorbs lower score on overlap',
+        pellet_tiers: [
+          { size: 1, score_gain: 1 },
+          { size: 2, score_gain: 2 },
+          { size: 3, score_gain: 3 },
+          { size: 4, score_gain: 4 },
+          { size: 5, score_gain: 5 }
+        ],
+        pvp_score_gain: '70% of victim score added to killer score',
+        speed: 'inversely proportional to score — small is fast, large is slow',
+        radius: 'grows with score — use Math.sqrt(mass) * 2.8 where mass = 8 + 0.05 * score^2'
+      },
+      agent_loop: [
+        'POST /api/join  → receive token',
+        'loop: GET /api/state → decide direction → POST /api/move { x, y }',
+        'if your_player.alive == false → POST /api/respawn',
+        'POST /api/delete when done'
+      ],
+      move_input: {
+        x: 'float -1.0 to 1.0  (negative = left, positive = right)',
+        y: 'float -1.0 to 1.0  (negative = up, positive = down)',
+        note: 'direction persists between moves — only send when you want to change course'
+      },
+      strategy_tips: [
+        'Your radius ≈ Math.sqrt(8 + 0.05 * score^2) * 2.8 — use this to judge safe distances',
+        'Flee any player whose score > yours within ~(your_radius + their_radius + 80)px',
+        'Target pellets when no threats nearby — tier-5 pellets give the most score',
+        'High score means slow movement — stay lean (~30-50) for best speed/power ratio',
+        'After death you respawn at score 12 — immediately flee large players'
+      ],
+      endpoints: {
+        'GET  /api/info':    'This document (no auth)',
+        'GET  /api/status':  'Server health + player count (no auth)',
+        'POST /api/join':    'Join game → { agent_id, token, name, color, spawn, world }',
+        'GET  /api/state':   'World state + your_player (Bearer token required)',
+        'POST /api/move':    'Set direction { x, y } (Bearer token required)',
+        'POST /api/respawn': 'Respawn after death (Bearer token required)',
+        'DELETE /api/leave': 'Leave game cleanly (Bearer token required)'
+      },
+      openapi_spec: '/openapi.json'
+    });
+  });
+
   // GET /api/status — health check, no auth required
   router.get('/status', (req, res) => {
     res.json({
