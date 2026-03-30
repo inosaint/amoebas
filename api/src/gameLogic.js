@@ -15,6 +15,7 @@ const RIP_MARKER_MS = 1000;
 const MASS_BASE = 8;
 const MASS_SCORE_SQUARED_FACTOR = 0.05;
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+export const VISION_RADIUS = 600;
 
 const NAME_MODIFIERS = [
   'Neon', 'Quantum', 'Liminal', 'Vanta', 'Fractal',
@@ -143,7 +144,9 @@ export function makeWorld() {
     ripMarkers: [],
     highScores: [],
     cachedState: null,
-    tickCount: 0
+    tickCount: 0,
+    currentTickEvents: [],
+    lastTickEvents: []
   };
 }
 
@@ -206,11 +209,12 @@ function rankScore(entry) {
   return (entry.prestige || 0) * 100 + (entry.kills || 0) * 5 + (entry.score || 0);
 }
 
-function checkPrestige(player) {
+function checkPrestige(player, world) {
   if (player.score >= MAX_SCORE) {
     player.prestige += 1;
     player.score = START_SCORE;
     player.mass = getMassFromScore(START_SCORE);
+    world.currentTickEvents.push({ type: 'prestige', player: player.name, count: player.prestige });
   }
 }
 
@@ -226,6 +230,7 @@ function handleDeath(world, victim, killer) {
     expiresAt: Date.now() + RIP_MARKER_MS
   });
 
+  world.currentTickEvents.push({ type: 'death', victim: victim.name, killer: killer ? killer.name : null, x: victim.x, y: victim.y });
   const finalScore = pushScore(world, victim);
   victim.deathInfo = { score: finalScore, by: killer ? killer.name : null };
 
@@ -234,7 +239,7 @@ function handleDeath(world, victim, killer) {
     killer.score = clamp(killer.score + victim.score * PVP_SCORE_GAIN_RATIO, 0, MAX_SCORE);
     killer.bestScore = Math.max(killer.bestScore, killer.score);
     killer.mass = getMassFromScore(killer.score);
-    checkPrestige(killer);
+    checkPrestige(killer, world);
   }
 }
 
@@ -243,12 +248,12 @@ function getLeaderboard(world) {
 
   for (const h of world.highScores) {
     const current = entries.get(h.id);
-    if (!current || rankScore(h) > rankScore(current)) entries.set(h.id, h);
+    if (!current || rankScore(h) > rankScore(current)) entries.set(h.id, { ...h, alive: false });
   }
 
   for (const p of world.players.values()) {
     const best = Math.max(p.bestScore || START_SCORE, p.score || START_SCORE);
-    const candidate = { id: p.id, name: p.name, score: best, color: p.color, kills: p.kills, prestige: p.prestige };
+    const candidate = { id: p.id, name: p.name, score: best, color: p.color, kills: p.kills, prestige: p.prestige, alive: p.alive };
     const current = entries.get(p.id);
     if (!current || rankScore(candidate) > rankScore(current)) {
       entries.set(p.id, candidate);
@@ -280,7 +285,8 @@ function serializeState(world) {
       })),
     ripMarkers: world.ripMarkers,
     pellets: world.pellets,
-    leaderboard: getLeaderboard(world)
+    leaderboard: getLeaderboard(world),
+    events: world.lastTickEvents
   };
 }
 
@@ -301,6 +307,7 @@ export function evictIdlePlayers(world) {
 }
 
 export function tick(world, io) {
+  world.currentTickEvents = [];
   world.ripMarkers = world.ripMarkers.filter((m) => m.expiresAt > Date.now());
 
   for (const player of world.players.values()) {
@@ -327,7 +334,7 @@ export function tick(world, io) {
       }
     }
 
-    checkPrestige(player);
+    checkPrestige(player, world);
     player.score = clamp(player.score - SCORE_DECAY, 0, MAX_SCORE);
     player.bestScore = Math.max(player.bestScore, player.score);
     player.mass = getMassFromScore(player.score);
@@ -347,6 +354,7 @@ export function tick(world, io) {
     }
   }
 
+  world.lastTickEvents = world.currentTickEvents;
   world.tickCount += 1;
   world.cachedState = serializeState(world);
   io.to('spectators').volatile.emit('state', world.cachedState);

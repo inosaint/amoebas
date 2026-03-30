@@ -189,7 +189,7 @@ function renderLeaderboard() {
     .map((item) => {
       const prestige = item.prestige > 0 ? `<span class="lb-prestige" title="Prestige">✦${item.prestige}</span>` : '';
       const kills = item.kills > 0 ? `<span class="lb-kills" title="Kills">☠${item.kills}</span>` : '';
-      return `<div class="leader-item">
+      return `<div class="leader-item" style="opacity:${item.alive ? 1 : 0.35}">
         <span class="lb-name"><span class="dot" style="background:${item.color}"></span><span>#${item.rank} ${item.name}</span></span>
         <span class="lb-meta">${prestige}${kills}<span class="lb-score">${Math.round(item.score)}</span></span>
       </div>`;

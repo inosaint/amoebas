@@ -7,7 +7,8 @@ import {
   respawnPlayer,
   pushScore,
   getRadius,
-  clamp
+  clamp,
+  VISION_RADIUS
 } from './gameLogic.js';
 
 export function createRestRouter(world) {
@@ -117,8 +118,19 @@ export function createRestRouter(world) {
       ripMarkers: []
     };
 
+    const vr2 = VISION_RADIUS * VISION_RADIUS;
+    const visiblePlayers = base.players.filter(
+      (p) => (p.x - player.x) ** 2 + (p.y - player.y) ** 2 <= vr2
+    );
+    const visiblePellets = base.pellets.filter(
+      (p) => (p.x - player.x) ** 2 + (p.y - player.y) ** 2 <= vr2
+    );
+
     res.json({
       ...base,
+      players: visiblePlayers,
+      pellets: visiblePellets,
+      vision_radius: VISION_RADIUS,
       your_player: {
         id: player.id,
         name: player.name,
