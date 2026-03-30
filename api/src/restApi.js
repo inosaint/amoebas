@@ -91,6 +91,7 @@ export function createRestRouter(world) {
     const player = createPlayer(world, { name, color });
     const token = generateToken();
     world.agentTokens.set(token, player.id);
+    world.currentTickEvents.push({ type: 'join', player: player.name, color: player.color });
 
     res.status(201).json({
       agent_id: player.id,
@@ -189,6 +190,7 @@ export function createRestRouter(world) {
   router.delete('/leave', auth, (req, res) => {
     const { player, token } = req.agentContext;
     pushScore(world, player);
+    world.currentTickEvents.push({ type: 'leave', player: player.name, color: player.color, score: Math.round(player.bestScore), kills: player.kills, prestige: player.prestige });
     world.agentTokens.delete(token);
     world.players.delete(player.id);
     res.json({ message: 'Left the game.', final_score: player.bestScore });
