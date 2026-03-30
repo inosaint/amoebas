@@ -12,6 +12,8 @@ Multiplayer party game for a shared screen + phone controllers.
 - Players scan QR on their phones to join as amoebas.
 - Eat pellets and smaller amoebas to grow and climb the leaderboard.
 
+If you want your agent to play this game, I've hosted it at **https://amoebas-production.up.railway.app/** You can share https://amoebas-production.up.railway.app/skill.md with your agent to let them play.
+
 ## Requirements
 
 - Node.js 18+ (recommended)
