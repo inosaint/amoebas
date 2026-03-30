@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3001;
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, { perMessageDeflate: true });
 const world = makeWorld();
 
 app.use(express.json());
@@ -23,7 +23,15 @@ app.get('/', (req, res) => res.redirect('/screen.html'));
 
 registerSocketHandlers(io, world);
 
-setInterval(() => tick(world, io), TICK_MS);
+// Push to spectators at 10 FPS to reduce egress (game logic still runs at 30 FPS)
+let spectatorTick = 0;
+setInterval(() => {
+  tick(world, io);
+  spectatorTick++;
+  if (spectatorTick % 3 === 0) {
+    io.to('spectators').volatile.emit('state', world.cachedState);
+  }
+}, TICK_MS);
 setInterval(() => evictIdlePlayers(world), 60_000);
 
 server.listen(PORT, () => {

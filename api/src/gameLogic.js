@@ -280,15 +280,15 @@ function serializeState(world) {
         id: p.id,
         name: p.name,
         color: p.color,
-        x: p.x,
-        y: p.y,
-        mass: p.mass,
-        score: p.score,
+        x: Math.round(p.x),
+        y: Math.round(p.y),
+        mass: Math.round(p.mass),
+        score: Math.round(p.score * 10) / 10,
         kills: p.kills,
         prestige: p.prestige
       })),
-    ripMarkers: world.ripMarkers,
-    pellets: world.pellets,
+    ripMarkers: world.ripMarkers.map((m) => ({ ...m, x: Math.round(m.x), y: Math.round(m.y) })),
+    pellets: world.pellets.map((p) => ({ ...p, x: Math.round(p.x), y: Math.round(p.y) })),
     leaderboard: getLeaderboard(world),
     events: world.lastTickEvents
   };
@@ -310,7 +310,7 @@ export function evictIdlePlayers(world) {
   }
 }
 
-export function tick(world, io) {
+export function tick(world) {
   world.currentTickEvents = [];
   world.ripMarkers = world.ripMarkers.filter((m) => m.expiresAt > Date.now());
 
@@ -361,5 +361,4 @@ export function tick(world, io) {
   world.lastTickEvents = world.currentTickEvents;
   world.tickCount += 1;
   world.cachedState = serializeState(world);
-  io.to('spectators').volatile.emit('state', world.cachedState);
 }
