@@ -129,6 +129,8 @@ export function createRestRouter(world) {
         score: player.score,
         mass: player.mass,
         radius: getRadius(player.score),
+        kills: player.kills,
+        prestige: player.prestige,
         death_info: player.deathInfo || null
       }
     });

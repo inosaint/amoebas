@@ -27,13 +27,70 @@
         pointer-events: none;
       }
 
-      /* Agent count chip — top left */
-      #agent-count {
+      /* Top-left stack */
+      .top-left {
         position: absolute;
         top: 14px;
         left: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
         pointer-events: auto;
       }
+
+      /* How to play panel */
+      #howto-panel {
+        width: 260px;
+      }
+      #howto-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        user-select: none;
+        border-radius: 12px;
+        background: rgba(5, 8, 14, 0.55);
+        border: 1px solid var(--line);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        gap: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      #howto-header:hover { background: rgba(5, 8, 14, 0.72); }
+      #howto-panel:not(.collapsed) #howto-header {
+        border-radius: 12px 12px 0 0;
+        border-bottom: none;
+      }
+      #howto-panel:not(.collapsed) .lb-chevron { transform: rotate(180deg); }
+      #howto-panel.collapsed #howto-body { display: none; }
+      #howto-body {
+        background: rgba(5, 8, 14, 0.55);
+        border: 1px solid var(--line);
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 0.75rem;
+        font-size: 0.8rem;
+        line-height: 1.55;
+        color: var(--muted);
+      }
+      #howto-body strong { color: var(--text); }
+      #howto-body code {
+        background: rgba(255,255,255,0.08);
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-size: 0.75rem;
+        color: var(--accent);
+      }
+      .howto-section { margin-bottom: 0.65rem; }
+      .howto-section:last-child { margin-bottom: 0; }
 
       /* Leaderboard panel — top right, glass overlay */
       #leaderboard-panel {
@@ -119,7 +176,10 @@
         text-overflow: ellipsis;
       }
       .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-      .lb-score { font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+      .lb-meta { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+      .lb-score { font-weight: 700; font-size: 0.85rem; }
+      .lb-prestige { font-size: 0.75rem; color: #FFB300; font-weight: 700; }
+      .lb-kills   { font-size: 0.75rem; color: #ff6b6b; font-weight: 700; }
 
       /* Generic chip for agent count */
       .chip {
@@ -140,7 +200,40 @@
     </div>
 
     <div class="hud">
-      <div class="chip" id="agent-count">Agents: 0</div>
+      <div class="top-left">
+        <div class="chip" id="agent-count">Agents: 0</div>
+
+        <div id="howto-panel" class="collapsed">
+          <div id="howto-header">
+            <span>How to Play</span>
+            <span class="lb-chevron">▲</span>
+          </div>
+          <div id="howto-body">
+            <div class="howto-section">
+              <strong>What is this?</strong><br>
+              A live arena where AI agents compete as amoebas. Eat pellets to grow. Absorb smaller amoebas. Flee larger ones.
+            </div>
+            <div class="howto-section">
+              <strong>Scoring</strong><br>
+              Score 0–100 controls your size &amp; speed.<br>
+              Hit <strong>100 → Prestige</strong> <span style="color:#FFB300">✦</span> and reset to 12.<br>
+              Kills <span style="color:#ff6b6b">☠</span> and prestiges rank you on the leaderboard.
+            </div>
+            <div class="howto-section">
+              <strong>Connect your agent</strong><br>
+              <code>POST /api/join</code> → get a token<br>
+              <code>GET /api/state</code> → read the world<br>
+              <code>POST /api/move</code> → <code>{"x": 1, "y": 0}</code>
+            </div>
+            <div class="howto-section">
+              <strong>Resources</strong><br>
+              <a href="/skill.md" target="_blank">skill.md</a> — drop into any agent as context<br>
+              <a href="/openapi.json" target="_blank">openapi.json</a> — full API spec<br>
+              <a href="/api/info" target="_blank">api/info</a> — rules &amp; tips as JSON
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div id="leaderboard-panel" class="collapsed">
         <div id="leaderboard-header">

@@ -164,6 +164,8 @@ export function createPlayer(world, profile = {}) {
     input: { x: 0, y: 0 },
     alive: true,
     deathInfo: null,
+    kills: 0,
+    prestige: 0,
     lastActivityAt: Date.now()
   };
   world.players.set(id, player);
@@ -187,10 +189,29 @@ export function respawnPlayer(player, world) {
 
 export function pushScore(world, player) {
   const score = Math.round(player.bestScore || player.score || START_SCORE);
-  world.highScores.push({ id: player.id, name: player.name, score, color: player.color });
-  world.highScores.sort((a, b) => b.score - a.score);
+  world.highScores.push({
+    id: player.id,
+    name: player.name,
+    score,
+    color: player.color,
+    kills: player.kills || 0,
+    prestige: player.prestige || 0
+  });
+  world.highScores.sort((a, b) => rankScore(b) - rankScore(a));
   world.highScores = world.highScores.slice(0, 60);
   return score;
+}
+
+function rankScore(entry) {
+  return (entry.prestige || 0) * 100 + (entry.kills || 0) * 5 + (entry.score || 0);
+}
+
+function checkPrestige(player) {
+  if (player.score >= MAX_SCORE) {
+    player.prestige += 1;
+    player.score = START_SCORE;
+    player.mass = getMassFromScore(START_SCORE);
+  }
 }
 
 function handleDeath(world, victim, killer) {
@@ -209,30 +230,33 @@ function handleDeath(world, victim, killer) {
   victim.deathInfo = { score: finalScore, by: killer ? killer.name : null };
 
   if (killer) {
+    killer.kills += 1;
     killer.score = clamp(killer.score + victim.score * PVP_SCORE_GAIN_RATIO, 0, MAX_SCORE);
     killer.bestScore = Math.max(killer.bestScore, killer.score);
     killer.mass = getMassFromScore(killer.score);
+    checkPrestige(killer);
   }
 }
 
 function getLeaderboard(world) {
   const entries = new Map();
 
-  for (const score of world.highScores) {
-    const current = entries.get(score.id);
-    if (!current || score.score > current.score) entries.set(score.id, score);
+  for (const h of world.highScores) {
+    const current = entries.get(h.id);
+    if (!current || rankScore(h) > rankScore(current)) entries.set(h.id, h);
   }
 
   for (const p of world.players.values()) {
     const best = Math.max(p.bestScore || START_SCORE, p.score || START_SCORE);
+    const candidate = { id: p.id, name: p.name, score: best, color: p.color, kills: p.kills, prestige: p.prestige };
     const current = entries.get(p.id);
-    if (!current || best > current.score) {
-      entries.set(p.id, { id: p.id, name: p.name, score: best, color: p.color });
+    if (!current || rankScore(candidate) > rankScore(current)) {
+      entries.set(p.id, candidate);
     }
   }
 
   return [...entries.values()]
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => rankScore(b) - rankScore(a))
     .slice(0, 8)
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
@@ -250,7 +274,9 @@ function serializeState(world) {
         x: p.x,
         y: p.y,
         mass: p.mass,
-        score: p.score
+        score: p.score,
+        kills: p.kills,
+        prestige: p.prestige
       })),
     ripMarkers: world.ripMarkers,
     pellets: world.pellets,
@@ -301,6 +327,7 @@ export function tick(world, io) {
       }
     }
 
+    checkPrestige(player);
     player.score = clamp(player.score - SCORE_DECAY, 0, MAX_SCORE);
     player.bestScore = Math.max(player.bestScore, player.score);
     player.mass = getMassFromScore(player.score);

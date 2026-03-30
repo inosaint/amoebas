@@ -5,13 +5,14 @@ const leaderboardEl = document.getElementById('leaderboard');
 const agentCountEl = document.getElementById('agent-count');
 const lbPanel = document.getElementById('leaderboard-panel');
 const lbHeader = document.getElementById('leaderboard-header');
+const howtoPanel = document.getElementById('howto-panel');
+const howtoHeader = document.getElementById('howto-header');
 
 const world = { width: 2400, height: 1600 };
 let state = { players: [], pellets: [], ripMarkers: [], leaderboard: [] };
 
-lbHeader.addEventListener('click', () => {
-  lbPanel.classList.toggle('collapsed');
-});
+lbHeader.addEventListener('click', () => lbPanel.classList.toggle('collapsed'));
+howtoHeader.addEventListener('click', () => howtoPanel.classList.toggle('collapsed'));
 
 function resize() {
   const dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -185,13 +186,14 @@ function renderLeaderboard() {
   }
 
   leaderboardEl.innerHTML = top5
-    .map(
-      (item) =>
-        `<div class="leader-item">
-          <span class="lb-name"><span class="dot" style="background:${item.color}"></span><span>#${item.rank} ${item.name}</span></span>
-          <span class="lb-score">${Math.round(item.score)}</span>
-        </div>`
-    )
+    .map((item) => {
+      const prestige = item.prestige > 0 ? `<span class="lb-prestige" title="Prestige">✦${item.prestige}</span>` : '';
+      const kills = item.kills > 0 ? `<span class="lb-kills" title="Kills">☠${item.kills}</span>` : '';
+      return `<div class="leader-item">
+        <span class="lb-name"><span class="dot" style="background:${item.color}"></span><span>#${item.rank} ${item.name}</span></span>
+        <span class="lb-meta">${prestige}${kills}<span class="lb-score">${Math.round(item.score)}</span></span>
+      </div>`;
+    })
     .join('');
 }
 
