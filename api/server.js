@@ -19,6 +19,7 @@ const world = makeWorld();
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 app.use('/api', createRestRouter(world));
+app.get('/', (req, res) => res.redirect('/screen.html'));
 
 registerSocketHandlers(io, world);
 
