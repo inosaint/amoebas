@@ -145,8 +145,7 @@ export function makeWorld() {
     highScores: [],
     cachedState: null,
     tickCount: 0,
-    currentTickEvents: [],
-    lastTickEvents: []
+    currentTickEvents: []
   };
 }
 
@@ -290,7 +289,7 @@ function serializeState(world) {
     ripMarkers: world.ripMarkers.map((m) => ({ ...m, x: Math.round(m.x), y: Math.round(m.y) })),
     pellets: world.pellets.map((p) => ({ ...p, x: Math.round(p.x), y: Math.round(p.y) })),
     leaderboard: getLeaderboard(world),
-    events: world.lastTickEvents
+    events: world.currentTickEvents
   };
 }
 
@@ -311,7 +310,6 @@ export function evictIdlePlayers(world) {
 }
 
 export function tick(world) {
-  world.currentTickEvents = [];
   world.ripMarkers = world.ripMarkers.filter((m) => m.expiresAt > Date.now());
 
   for (const player of world.players.values()) {
@@ -358,7 +356,6 @@ export function tick(world) {
     }
   }
 
-  world.lastTickEvents = world.currentTickEvents;
   world.tickCount += 1;
   world.cachedState = serializeState(world);
 }

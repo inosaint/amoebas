@@ -30,6 +30,7 @@ setInterval(() => {
   spectatorTick++;
   if (spectatorTick % 3 === 0) {
     io.to('spectators').volatile.emit('state', world.cachedState);
+    world.currentTickEvents = [];
   }
 }, TICK_MS);
 setInterval(() => evictIdlePlayers(world), 60_000);
