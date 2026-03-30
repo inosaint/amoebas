@@ -14,6 +14,20 @@ let state = { players: [], pellets: [], ripMarkers: [], leaderboard: [] };
 lbHeader.addEventListener('click', () => lbPanel.classList.toggle('collapsed'));
 howtoHeader.addEventListener('click', () => howtoPanel.classList.toggle('collapsed'));
 
+// Populate skill.md URL and copy button
+const skillUrl = `${location.origin}/skill.md`;
+const skillUrlEl = document.getElementById('skill-url');
+const copyBtn = document.getElementById('copy-skill-btn');
+if (skillUrlEl) skillUrlEl.textContent = skillUrl;
+if (copyBtn) {
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(skillUrl).then(() => {
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1800);
+    });
+  });
+}
+
 function resize() {
   const dpr = Math.max(1, window.devicePixelRatio || 1);
   const rect = canvas.getBoundingClientRect();
