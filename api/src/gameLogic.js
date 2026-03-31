@@ -361,5 +361,5 @@ export function tick(world, io) {
   world.lastTickEvents = world.currentTickEvents;
   world.tickCount += 1;
   world.cachedState = serializeState(world);
-  io.to('spectators').volatile.emit('state', world.cachedState);
+  io.to('amoebas-spectators').volatile.emit('state', world.cachedState);
 }
