@@ -151,7 +151,11 @@
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         padding: 0.3rem 0.75rem 0.6rem;
+        max-height: 310px;
+        overflow-y: auto;
       }
+      #leaderboard-body::-webkit-scrollbar { width: 4px; }
+      #leaderboard-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 
       .leader-item {
         display: flex;
@@ -277,7 +281,7 @@
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         padding: 0.5rem 0.75rem;
-        max-height: 220px;
+        max-height: 400px;
         overflow-y: auto;
         display: flex;
         flex-direction: column;

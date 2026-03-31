@@ -265,7 +265,7 @@ function getLeaderboard(world) {
 
   return [...entries.values()]
     .sort((a, b) => rankScore(b) - rankScore(a))
-    .slice(0, 8)
+    .slice(0, 100)
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 

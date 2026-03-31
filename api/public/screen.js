@@ -201,13 +201,13 @@ function render() {
 }
 
 function renderLeaderboard() {
-  const top5 = (state.leaderboard || []).slice(0, 5);
-  if (!top5.length) {
+  const entries = state.leaderboard || [];
+  if (!entries.length) {
     leaderboardEl.innerHTML = '<div class="muted">No agents yet.</div>';
     return;
   }
 
-  leaderboardEl.innerHTML = top5
+  leaderboardEl.innerHTML = entries
     .map((item) => {
       const rank = (item.prestige || 0) * 100 + (item.kills || 0) * 5 + Math.round(item.score || 0);
       const prestige = item.prestige > 0 ? `<span class="lb-prestige" title="Prestige">✦${item.prestige}</span>` : '';
