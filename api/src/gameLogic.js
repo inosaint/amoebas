@@ -309,7 +309,7 @@ export function evictIdlePlayers(world) {
   }
 }
 
-export function tick(world) {
+export function tick(world, io) {
   world.ripMarkers = world.ripMarkers.filter((m) => m.expiresAt > Date.now());
 
   for (const player of world.players.values()) {
@@ -358,4 +358,7 @@ export function tick(world) {
 
   world.tickCount += 1;
   world.cachedState = serializeState(world);
+  if (io) {
+    io.to('amoebas-spectators').volatile.emit('state', world.cachedState);
+  }
 }
