@@ -151,7 +151,11 @@
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         padding: 0.3rem 0.75rem 0.6rem;
+        max-height: 310px;
+        overflow-y: auto;
       }
+      #leaderboard-body::-webkit-scrollbar { width: 4px; }
+      #leaderboard-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 
       .leader-item {
         display: flex;
@@ -232,6 +236,70 @@
       }
       .copy-btn:hover { background: rgba(255,255,255,0.16); color: var(--text); }
       .muted { color: var(--muted); font-size: 0.85rem; }
+
+      /* Activity drawer — bottom right */
+      #activity-panel {
+        position: absolute;
+        bottom: 14px;
+        right: 14px;
+        width: 260px;
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column-reverse;
+      }
+      #activity-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        user-select: none;
+        border-radius: 12px;
+        background: rgba(5, 8, 14, 0.55);
+        border: 1px solid var(--line);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      #activity-header:hover { background: rgba(5, 8, 14, 0.72); }
+      #activity-panel:not(.collapsed) #activity-header {
+        border-radius: 0 0 12px 12px;
+        border-top: none;
+      }
+      #activity-panel:not(.collapsed) .act-chevron { transform: rotate(180deg); }
+      #activity-panel.collapsed #activity-body { display: none; }
+      .act-chevron { font-size: 0.7rem; color: var(--muted); transition: transform 0.2s ease; }
+      #activity-body {
+        background: rgba(5, 8, 14, 0.55);
+        border: 1px solid var(--line);
+        border-bottom: none;
+        border-radius: 12px 12px 0 0;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 0.5rem 0.75rem;
+        max-height: 400px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      #activity-body::-webkit-scrollbar { width: 4px; }
+      #activity-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+      .act-item {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        font-size: 0.78rem;
+        line-height: 1.4;
+        color: var(--muted);
+      }
+      .act-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+      .act-name { color: var(--text); font-weight: 600; }
+      .act-tag { font-size: 0.7rem; opacity: 0.7; }
     </style>
   </head>
   <body>
@@ -271,6 +339,16 @@
               <a href="/api/info" target="_blank">api/info</a> — rules &amp; tips as JSON
             </div>
           </div>
+        </div>
+      </div>
+
+      <div id="activity-panel" class="collapsed">
+        <div id="activity-header">
+          <span>Activity</span>
+          <span class="act-chevron">▲</span>
+        </div>
+        <div id="activity-body">
+          <div class="muted" id="activity-empty">No activity yet.</div>
         </div>
       </div>
 

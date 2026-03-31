@@ -7,12 +7,20 @@ const lbPanel = document.getElementById('leaderboard-panel');
 const lbHeader = document.getElementById('leaderboard-header');
 const howtoPanel = document.getElementById('howto-panel');
 const howtoHeader = document.getElementById('howto-header');
+const activityPanel = document.getElementById('activity-panel');
+const activityHeader = document.getElementById('activity-header');
+const activityBody = document.getElementById('activity-body');
+const activityEmpty = document.getElementById('activity-empty');
+
+const activityLog = [];
+const MAX_ACTIVITY = 50;
 
 const world = { width: 2400, height: 1600 };
 let state = { players: [], pellets: [], ripMarkers: [], leaderboard: [] };
 
 lbHeader.addEventListener('click', () => lbPanel.classList.toggle('collapsed'));
 howtoHeader.addEventListener('click', () => howtoPanel.classList.toggle('collapsed'));
+activityHeader.addEventListener('click', () => activityPanel.classList.toggle('collapsed'));
 
 // Populate skill.md URL and copy button
 const skillUrl = `${location.origin}/skill.md`;
@@ -193,13 +201,13 @@ function render() {
 }
 
 function renderLeaderboard() {
-  const top5 = (state.leaderboard || []).slice(0, 5);
-  if (!top5.length) {
+  const entries = state.leaderboard || [];
+  if (!entries.length) {
     leaderboardEl.innerHTML = '<div class="muted">No agents yet.</div>';
     return;
   }
 
-  leaderboardEl.innerHTML = top5
+  leaderboardEl.innerHTML = entries
     .map((item) => {
       const rank = (item.prestige || 0) * 100 + (item.kills || 0) * 5 + Math.round(item.score || 0);
       const prestige = item.prestige > 0 ? `<span class="lb-prestige" title="Prestige">✦${item.prestige}</span>` : '';
@@ -212,9 +220,43 @@ function renderLeaderboard() {
     .join('');
 }
 
+function formatActivity(ev) {
+  const dot = `<span class="act-dot" style="background:${ev.color || '#aaa'}"></span>`;
+  const name = `<span class="act-name">${ev.player}</span>`;
+  if (ev.type === 'join') return `${dot}<span>${name} joined</span>`;
+  if (ev.type === 'leave') {
+    const badges = (ev.prestige > 0 ? `<span style="color:#FFB300">✦${ev.prestige}</span> ` : '') +
+                   (ev.kills > 0   ? `<span style="color:#ff6b6b">☠${ev.kills}</span> ` : '');
+    return `${dot}<span>${name} left · ${badges}<span class="act-tag">score ${ev.score}</span></span>`;
+  }
+  if (ev.type === 'death') {
+    const killer = ev.killer ? `<span class="act-name">${ev.killer}</span>` : 'the void';
+    return `${dot}<span>${name} eaten by ${killer}</span>`;
+  }
+  if (ev.type === 'prestige') {
+    return `${dot}<span>${name} <span style="color:#FFB300">✦ Prestige ${ev.count}!</span></span>`;
+  }
+  return '';
+}
+
+function renderActivity() {
+  if (!activityLog.length) { activityEmpty.style.display = ''; return; }
+  activityEmpty.style.display = 'none';
+  activityBody.innerHTML = activityLog
+    .slice()
+    .reverse()
+    .map((ev) => `<div class="act-item">${formatActivity(ev)}</div>`)
+    .join('') + `<div class="muted" id="activity-empty" style="display:none">No activity yet.</div>`;
+}
+
 socket.on('state', (incoming) => {
   world.width = incoming.world.width;
   world.height = incoming.world.height;
+  if (incoming.events && incoming.events.length) {
+    activityLog.push(...incoming.events);
+    if (activityLog.length > MAX_ACTIVITY) activityLog.splice(0, activityLog.length - MAX_ACTIVITY);
+    renderActivity();
+  }
   state = incoming;
   agentCountEl.textContent = `Agents: ${state.players.length}`;
   renderLeaderboard();

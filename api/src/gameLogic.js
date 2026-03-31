@@ -145,8 +145,7 @@ export function makeWorld() {
     highScores: [],
     cachedState: null,
     tickCount: 0,
-    currentTickEvents: [],
-    lastTickEvents: []
+    currentTickEvents: []
   };
 }
 
@@ -266,7 +265,7 @@ function getLeaderboard(world) {
 
   return [...entries.values()]
     .sort((a, b) => rankScore(b) - rankScore(a))
-    .slice(0, 8)
+    .slice(0, 100)
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
@@ -280,17 +279,17 @@ function serializeState(world) {
         id: p.id,
         name: p.name,
         color: p.color,
-        x: p.x,
-        y: p.y,
-        mass: p.mass,
-        score: p.score,
+        x: Math.round(p.x),
+        y: Math.round(p.y),
+        mass: Math.round(p.mass),
+        score: Math.round(p.score * 10) / 10,
         kills: p.kills,
         prestige: p.prestige
       })),
-    ripMarkers: world.ripMarkers,
-    pellets: world.pellets,
+    ripMarkers: world.ripMarkers.map((m) => ({ ...m, x: Math.round(m.x), y: Math.round(m.y) })),
+    pellets: world.pellets.map((p) => ({ ...p, x: Math.round(p.x), y: Math.round(p.y) })),
     leaderboard: getLeaderboard(world),
-    events: world.lastTickEvents
+    events: world.currentTickEvents
   };
 }
 
@@ -311,7 +310,6 @@ export function evictIdlePlayers(world) {
 }
 
 export function tick(world, io) {
-  world.currentTickEvents = [];
   world.ripMarkers = world.ripMarkers.filter((m) => m.expiresAt > Date.now());
 
   for (const player of world.players.values()) {
@@ -358,8 +356,9 @@ export function tick(world, io) {
     }
   }
 
-  world.lastTickEvents = world.currentTickEvents;
   world.tickCount += 1;
   world.cachedState = serializeState(world);
-  io.to('amoebas-spectators').volatile.emit('state', world.cachedState);
+  if (io) {
+    io.to('amoebas-spectators').volatile.emit('state', world.cachedState);
+  }
 }
